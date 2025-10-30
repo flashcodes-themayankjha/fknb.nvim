@@ -1,17 +1,18 @@
 -- lua/fknb/ftdetect.lua
+-- @fknotes NOTE: Registering file extensions for FkNB filetype detection.
 vim.filetype.add({
   extension = {
-    fknb = "fknb",
-    nb = "fknb",
-    ipynb = "fknb",
-    pynb = "fknb",
+       fknb = "fknb",
+       nb = "fknb",
+       ipynb = "fknb",
+       pynb = "fknb",
   },
 })
 
 -- lua/fknb/ftplugin/fknb.lua
--- Treat .fknb files as markdown for parsing
+-- @fknotes NOTE: Treat .fknb files as markdown for Treesitter parsing.
 vim.treesitter.language.register("markdown", "fknb")
 
--- Optional: enable markdown highlight
+-- @fknotes NOTE: Optional: Enable markdown highlight for 'fknb' filetype.
 vim.bo.filetype = "fknb"
 vim.bo.syntax = "markdown"

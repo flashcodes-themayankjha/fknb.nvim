@@ -1,20 +1,20 @@
 -- lua/fknb/icons.lua
 local M = {}
 
--- @fknotes NOTE: FkNB File icon definition and registeration
-
--- FkNB file icon definition
+-- @fknotes NOTE: FkNB file icon definition.
 M.icon = {
-  icon = "󰧑",            -- You can change to your preferred glyph (, , , etc.)
-  color = "#f9e2af",      
-  name = "FkNB",
+   icon = "󰧑",
+   color = "#f9e2af",
+   name = "FkNB",
 }
 
--- Register with nvim-web-devicons (if installed)
+-- @fknotes NOTE: Function to set up and register icons with nvim-web-devicons.
 function M.setup()
-  local ok, devicons = pcall(require, "nvim-web-devicons")
+   local ok, devicons = pcall(require, "nvim-web-devicons")
+  
   if not ok then return end
 
+  -- @fknotes NOTE: Register the FkNB icon for various notebook filetypes.
   devicons.set_icon({
     fknb = M.icon,
     nb = M.icon,

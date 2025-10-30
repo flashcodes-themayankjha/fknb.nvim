@@ -1,7 +1,15 @@
 -- lua/fknb/init.lua
 
--- Load filetype detection
-require("fknb.utils.fdetect")
+-- @fknotes NOTE: Main entry point for the FkNB plugin.
+local M = {}
 
--- Load icons
-require("fknb.utils.icon").setup()
+-- @fknotes NOTE: Function to set up the FkNB plugin.
+function M.setup()
+  -- @fknotes NOTE: Load filetype detection for FkNB related files.
+  require("fknb.utils.fdetect")
+
+  -- @fknotes NOTE: Initialize and register icons for FkNB related files.
+  require("fknb.utils.icon").setup()
+end
+
+return M
