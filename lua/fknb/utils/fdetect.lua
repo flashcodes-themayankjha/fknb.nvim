@@ -16,3 +16,10 @@ vim.treesitter.language.register("markdown", "fknb")
 -- @fknotes NOTE: Optional: Enable markdown highlight for 'fknb' filetype.
 vim.bo.filetype = "fknb"
 vim.bo.syntax = "markdown"
+
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "fknb",
+  callback = function(ev)
+    vim.treesitter.start(ev.buf, "fknb")
+  end,
+})
