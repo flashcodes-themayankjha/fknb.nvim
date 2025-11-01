@@ -1,24 +1,24 @@
 ;; ─────────────────────────────────────────────────────
-;; Inject markdown grammar inside markdown cell body
+;; Inject Markdown inside markdown cells
 ;; ─────────────────────────────────────────────────────
 
 ((notebook_markdown_cell
-  (markdown_text_line) @markdown))
+  (markdown_text_line) @injection.content)
+ (#set! injection.language "markdown"))
 
-((markdown_fenced_block
-  (language_tag) @injection.language
-  (#match? @injection.language "^[A-Za-z0-9_+-]+$"))
-  (markdown_fenced_block) @injection.content)
 
-;; fallback fenced code in markdown — if no language tag, treat as markdown
-((markdown_fenced_block) @markdown)
 
 
 ;; ─────────────────────────────────────────────────────
-;; Inject real language inside code cell body
+;; Inject language inside real notebook code cells
+;; #%% [python]
 ;; ─────────────────────────────────────────────────────
 
 ((notebook_code_cell
   lang: (language_tag) @injection.language
+  (raw_code_line) @injection.content))
+
+;; fallback: if no language matched, treat as python
+((notebook_code_cell
   (raw_code_line) @injection.content)
- (#match? @injection.language "^[A-Za-z0-9_+-]+$"))
+ (#set! injection.language "python"))
