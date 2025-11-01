@@ -14,6 +14,7 @@ function M.setup()
   
   if not ok then return end
 
+
   -- @fknotes NOTE: Register the FkNB icon for various notebook filetypes.
   devicons.set_icon({
     fknb = M.icon,
