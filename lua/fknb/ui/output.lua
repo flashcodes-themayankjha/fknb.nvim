@@ -1,43 +1,106 @@
--- lua/fknb/ui/output.lua
-
 local M = {}
+local ns = vim.api.nvim_create_namespace("fknb_output")
 
---- Creates the output frame text.
---- @param output_data table Data including content (as a list of strings), execution_count, and status.
-function M.create_output_text(output_data)
+-- Icons
+local icons = {
+  ok = "󰗠",
+  error = "",
+  info = "󰜉",
+}
+
+-- Highlight groups
+local hl = {
+  sep         = "Comment",
+  icon_ok     = "DiffAdded",
+  icon_err    = "DiagnosticError",
+  icon_info   = "DiagnosticWarn",
+
+  out_label   = "Normal",
+  out_id      = "DiagnosticInfo",
+  exec_lbl    = "Comment",
+  exec_time   = "DiagnosticWarn",
+  log_lbl     = "DiagnosticError",
+
+  out_text    = "Normal",
+  err_text    = "Normal",
+}
+
+local INDENT = "  "
+
+---@param buf number
+---@param lnum number
+---@param cell_id number
+---@param output string
+---@param status string
+---@param exec_ms number
+function M.render(buf, lnum, cell_id, output, status, exec_ms)
+  vim.api.nvim_buf_clear_namespace(buf, ns, lnum, lnum + 20)
+
   local width = vim.api.nvim_win_get_width(0)
-  local lines = {}
+  local sep = string.rep("─", width)
 
-  -- For now, using a simple top separator. Can be customized later.
-  local top_separator = "──────────────── output ────────────────"
-  local top_padding_width = width - vim.fn.strwidth(top_separator)
-  if top_padding_width > 0 then
-      top_separator = top_separator .. string.rep("─", top_padding_width)
+  local icon = icons[status] or icons.info
+  local icon_hl = ({
+    ok = hl.icon_ok,
+    error = hl.icon_err,
+    info = hl.icon_info,
+  })[status] or hl.icon_info
+
+  local exec_label = (status == "error") and "Failed in" or "Executed in"
+
+  -- Header Virt Text segments
+  local left_segments = {
+    { icon .. " ", icon_hl },
+    { "[ Out: ", hl.out_label },
+    { "#" .. cell_id, hl.out_id },
+    { " ]", hl.out_label },
+  }
+
+  local right_segments = {
+    { exec_label .. " ", hl.exec_lbl },
+    { tostring(exec_ms) .. "ms", hl.exec_time },
+  }
+
+  local left_len = vim.fn.strdisplaywidth(
+    table.concat(vim.tbl_map(function(seg) return seg[1] end, left_segments))
+  )
+  local right_len = vim.fn.strdisplaywidth(
+    table.concat(vim.tbl_map(function(seg) return seg[1] end, right_segments))
+  )
+
+  local spacing = width - left_len - right_len
+  if spacing < 1 then spacing = 1 end
+
+  local virt = {}
+
+  -- Top header line
+  local header = vim.list_extend(
+    left_segments,
+    { { string.rep(" ", spacing), "" } }
+  )
+  vim.list_extend(header, right_segments)
+  table.insert(virt, header)
+
+  -- Separator
+  table.insert(virt, { { sep, hl.sep } })
+
+  -- Log for errors
+  if status == "error" then
+    table.insert(virt, { { "Log:", hl.log_lbl } })
   end
-  table.insert(lines, top_separator)
 
-
-  -- Add the actual output content
-  for _, line in ipairs(output_data.content or {}) do
-    table.insert(lines, line)
+  -- Output body
+  for _, line in ipairs(vim.split(output or "", "\n", { trimempty = false })) do
+    table.insert(virt, { { INDENT .. line, status == "error" and hl.err_text or hl.out_text } })
   end
 
-  -- Create the footer: ─ Out[5] ─ ERROR ───────────────────╮
-  local status_str = string.upper(output_data.status or "SUCCESS")
-  local footer_label = string.format("─ Out[%d] ─ %s ─", output_data.execution_count, status_str)
-  local footer_end = "╮"
+  -- Bottom separator
+  table.insert(virt, { { sep, hl.sep } })
 
-  local padding_width = width - vim.fn.strwidth(footer_label) - vim.fn.strwidth(footer_end)
-  local padding = ""
-  if padding_width > 0 then
-    padding = string.rep("─", padding_width)
-  end
-
-  local footer = padding .. footer_label .. footer_end
-  table.insert(lines, footer)
-
-  return lines
+  vim.api.nvim_buf_set_extmark(buf, ns, lnum, 0, {
+    virt_lines = virt,
+    priority = 500,
+  })
 end
-
 
 return M
