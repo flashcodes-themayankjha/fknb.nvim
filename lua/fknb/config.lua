@@ -4,8 +4,11 @@ local M = {}
 M.options = {
   theme = "onedark",
   default_kernel = "python3",
+  default_kernel_path = nil,
+  default_kernel_name = nil,
   cell_separator = "─",
   show_watermark = true,
+  auto_save = false,
 
   markdown = {
     headers = {
