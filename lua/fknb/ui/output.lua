@@ -1,3 +1,4 @@
+-- Author : Mayank Jha
 local M = {}
 local ns = vim.api.nvim_create_namespace("fknb_output")
 
