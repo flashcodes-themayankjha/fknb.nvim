@@ -29,6 +29,14 @@ local function on_stdout(id, data, event)
           state.kernel.id = id
           state.kernel.connection_file = result.connection_file
           vim.notify("Kernel is ready.", vim.log.levels.INFO)
+        elseif result.cell_id then
+          local cell = state.cells[result.cell_id]
+          if cell then
+            cell.status = result.status
+            if result.output then
+              cell.output = result.output
+            end
+          end
         else
           renderer.render_output(result)
         end
@@ -105,14 +113,13 @@ function M.stop()
   end, 1000)
 end
 
-function M.execute(code)
+function M.execute(cell_id, code)
   if not job_id or not state.kernel then
     vim.notify("Kernel is not running. Start one first.", vim.log.levels.ERROR)
     return
   end
-  local command = { action = "execute", code = code }
+  local command = { action = "execute", cell_id = cell_id, code = code }
   vim.fn.jobsend(job_id, vim.fn.json_encode(command) .. "\n")
 end
 
 return M
-
