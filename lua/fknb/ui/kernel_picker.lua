@@ -1,82 +1,47 @@
 local M = {}
-
-local telescope = require("telescope.builtin")
-local actions = require("telescope.actions")
-local finders = require("telescope.finders")
-local pickers = require("telescope.pickers")
-local conf = require("telescope.config").values
-
-local kernel = require("fknb.core.kernel")
+local pickers = require('telescope.pickers')
 local config = require("fknb.config")
+local state = require("fknb.utils.state")
+local kernel = require("fknb.core.kernel")
 
-function M.show()
-  local python_cmd = config.options.default_kernel
-  local cmd = {python_cmd, "-m", "jupyter", "kernelspec", "list", "--json"}
-  
-  vim.notify("Running command: " .. table.concat(cmd, " "))
+function M.show_kernel_picker(available_kernels)
+  if #available_kernels == 0 then
+    vim.notify("No kernels found.", vim.log.levels.WARN)
+    return
+  end
 
-  local stdout_chunks = {}
-  local stderr_chunks = {}
+  local entries = {}
+  for _, k in ipairs(available_kernels) do
+    table.insert(entries, { value = k.name, display = k.display_name .. " (" .. k.language .. ")" })
+  end
 
-  vim.fn.jobstart(cmd, {
-    on_stdout = function(_, data) 
-      if data then
-        table.insert(stdout_chunks, table.concat(data, "\n"))
+  pickers.new({}, {
+    prompt_title = "Select Kernel",
+    finder = require('telescope.finders').new_table({
+      results = entries,
+      entry_maker = function(entry)
+        return { value = entry.value, display = entry.display, ordinal = entry.display }
+      end,
+    }),
+    sorter = require('telescope.sorters').get_generic_fuzzy_sorter({}),
+    attach_mappings = function(prompt_bufnr, map)
+      local function on_confirm(bufnr)
+        local selection = require('telescope.actions.state').get_selected_entry()
+        if selection then
+          local selected_kernel_name = selection.value
+          config.options.default_kernel = selected_kernel_name
+          state.last_selected_kernel = selected_kernel_name
+          kernel.stop() -- Stop current kernel if running
+          kernel.start()
+          vim.notify("Selected kernel: " .. selection.display, vim.log.levels.INFO)
+        end
+        require('telescope.actions').close(bufnr)
       end
+      map("i", "<CR>", on_confirm)
+      map("n", "<CR>", on_confirm)
+      return true
     end,
-    on_stderr = function(_, data) 
-      if data then
-        table.insert(stderr_chunks, table.concat(data, "\n"))
-      end
-    end,
-    on_exit = function(_, code, _) 
-      if code ~= 0 then
-        vim.notify("Failed to get kernel list. Exit code: " .. code .. "\n" .. table.concat(stderr_chunks, "\n"), vim.log.levels.ERROR)
-        return
-      end
-
-      local kernels_json = table.concat(stdout_chunks, "")
-      local ok, kernels_data = pcall(vim.fn.json_decode, kernels_json)
-
-      if not ok or not kernels_data or not kernels_data.kernelspecs then
-        vim.notify("Failed to parse Jupyter kernel list. Raw output:\n" .. kernels_json, vim.log.levels.ERROR)
-        return
-      end
-
-      local kernels = kernels_data.kernelspecs
-      local results = {}
-      for name, spec in pairs(kernels) do
-        table.insert(results, {
-          name = name,
-          display_name = spec.spec.display_name,
-          language = spec.spec.language,
-        })
-      end
-
-      pickers.new({}, {
-        prompt_title = "Select a Kernel",
-        finder = finders.new_table {
-          results = results,
-          entry_maker = function(entry)
-            return {
-              value = entry,
-              display = entry.display_name,
-              ordinal = entry.display_name,
-            }
-          end,
-        },
-        sorter = conf.generic_sorter({}),
-        attach_mappings = function(prompt_bufnr, map)
-          actions.select_default:replace(function()
-            actions.close(prompt_bufnr)
-            local selection = require("telescope.actions.state").get_selected_entry()
-            kernel.start(selection.value.name)
-          end)
-          return true
-        end,
-      }):find()
-    end,
-  })
+  }):find()
 end
 
 return M
