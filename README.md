@@ -21,7 +21,6 @@ Run code blocks, render execution controls inline, and work like a scientist wit
 | Animated status spinner                |   ✅   |
 | Cell ID + labels with syntax colors    |   ✅   |
 | Execution icons (▶ ↻ 🐞)               |   ✅   |
-| Hidden cell delimiter (`#%%`)           |   ✅   |
 | Does not override your code            |   ✅   |
 
 
@@ -98,14 +97,14 @@ FKNB uses:
 •Spinner + status icons
 •Hide cell markers
 •No-overlap UI rendering
+•Execute Python/Lua cells
+•Output panel render
 
 🔜 Coming Next
 
 | Feature                      | Priority |
 | ---------------------------- | :------: |
-| Execute Python/Lua cells     |  ⭐⭐⭐⭐  |
 | Persistent execution state   |   ⭐⭐⭐    |
-| Output panel render          |  ⭐⭐⭐⭐  |
 | Async execution queue        |   ⭐⭐⭐    |
 | Toolbar keybinds             |    ⭐⭐    |
 | Theme support (Catppuccin/Gruvbox) |    ⭐⭐    |
