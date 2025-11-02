@@ -34,6 +34,7 @@ local M = {
 
   --- Execution counters
   exec_count = 0,
+  last_selected_kernel = nil,
 }
 
 return M
