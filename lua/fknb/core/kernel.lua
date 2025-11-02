@@ -29,16 +29,25 @@ local function on_stdout(id, data, event)
           state.kernel.id = id
           state.kernel.connection_file = result.connection_file
           vim.notify("Kernel is ready.", vim.log.levels.INFO)
+        elseif result.event == "kernel_started" then
+          vim.notify("Kernel bridge started.", vim.log.levels.INFO)
+        elseif result.event == "kernels_list" then
+          state.available_kernels = result.kernels
         elseif result.cell_id then
           local cell = state.cells[result.cell_id]
           if cell then
             cell.status = result.status
             if result.output then
               cell.output = result.output
+              renderer.render_cell(vim.api.nvim_get_current_buf(), cell)
             end
           end
+        elseif result.event == "error" then
+          vim.notify("Kernel bridge error: " .. result.message .. "\n" .. result.traceback, vim.log.levels.ERROR)
         else
-          renderer.render_output(result)
+          -- This case should ideally not be reached if all outputs have cell_id
+          -- For now, we'll just notify, but a more robust solution might be needed
+          vim.notify("Unhandled kernel output: " .. vim.inspect(result), vim.log.levels.WARN)
         end
       else
         vim.notify("Error decoding JSON from kernel bridge: " .. line, vim.log.levels.ERROR)
@@ -46,6 +55,7 @@ local function on_stdout(id, data, event)
     end
   end
 end
+
 
 local function on_stderr(id, data, event)
   if data then
@@ -84,10 +94,21 @@ function M.start()
   end
 
   local python_cmd = config.options.default_kernel
-  state.kernel = { name = python_cmd } -- Set kernel name in state
+  local kernel_name = config.options.default_kernel
+
+  if config.options.default_kernel_path then
+    python_cmd = config.options.default_kernel_path
+  end
+  if config.options.default_kernel_name then
+    kernel_name = config.options.default_kernel_name
+  end
+
+  state.kernel = { name = kernel_name } -- Set kernel name in state
+
+  vim.notify("Launching kernel bridge with python_cmd: " .. python_cmd .. " and kernel_name: " .. kernel_name, vim.log.levels.INFO)
 
   check_dependencies(python_cmd, function()
-    local bridge_path = vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":h") .. "/bridge/kernel_bridge.py"
+    local bridge_path = vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":h") .. "/bridge/python/kernel.py"
     job_id = vim.fn.jobstart({python_cmd, "-u", bridge_path}, {
       on_stdout = on_stdout,
       on_stderr = on_stderr,
@@ -106,8 +127,11 @@ end
 function M.stop()
   if not job_id then return end
   vim.fn.jobsend(job_id, vim.fn.json_encode({ action = "shutdown" }) .. "\n")
+  -- Give the bridge a moment to shut down gracefully
   vim.defer_fn(function()
-    vim.fn.jobstop(job_id)
+    if job_id and vim.fn.jobpid(job_id) ~= -1 then -- Check if job is still running
+      vim.fn.jobstop(job_id)
+    end
     job_id = nil
     state.kernel = nil
   end, 1000)
@@ -120,6 +144,23 @@ function M.execute(cell_id, code)
   end
   local command = { action = "execute", cell_id = cell_id, code = code }
   vim.fn.jobsend(job_id, vim.fn.json_encode(command) .. "\n")
+end
+
+function M.list_kernels(callback)
+  if not job_id then
+    vim.notify("Kernel bridge is not running. Start one first.", vim.log.levels.ERROR)
+    return
+  end
+  state.available_kernels = nil -- Clear previous list
+  vim.fn.jobsend(job_id, vim.fn.json_encode({ action = "list_kernels" }) .. "\n")
+  -- Wait for the response to be processed by on_stdout
+  local timer = vim.loop.new_timer()
+  timer:start(0, 100, vim.schedule_wrap(function()
+    if state.available_kernels then
+      timer:stop()
+      callback(state.available_kernels)
+    end
+  end))
 end
 
 return M
