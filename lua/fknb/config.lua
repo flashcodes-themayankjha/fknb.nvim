@@ -3,7 +3,7 @@ local M = {}
 
 M.options = {
   theme = "onedark",
-  default_kernel = "python3.12",
+  default_kernel = "python3",
   cell_separator = "─",
   show_watermark = true,
 
