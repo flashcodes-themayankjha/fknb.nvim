@@ -24,6 +24,8 @@ function M.setup()
   -- Parser + UI
   local parser = require("fknb.core.parser")
   local ui = require("fknb.ui.cell_ui")
+  ui.attach_autocmd()
+  local renderer = require("fknb.core.renderer")
 
   -- Debug command
   vim.api.nvim_create_user_command("FKNBParse", function()
@@ -31,8 +33,20 @@ function M.setup()
     print(vim.inspect(cells))
   end, {})
 
-  -- Attach smoothing UI behavior
-  ui.attach_autocmd()
+  vim.api.nvim_create_user_command("FKNBRender", function()
+    renderer.render_dummy_cell()
+  end, {})
+end
+
+function M.run_current_cell()
+  local parser = require("fknb.core.parser")
+  local kernel = require("fknb.core.kernel")
+  local cell = parser.get_cell_at_cursor()
+  if cell then
+    kernel.execute(cell.id, table.concat(cell.lines, "\n"))
+  else
+    vim.notify("Not in a cell", vim.log.levels.WARN)
+  end
 end
 
 return M
