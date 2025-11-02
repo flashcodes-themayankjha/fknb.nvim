@@ -1,49 +1,20 @@
 local M = {}
 
 local ns = vim.api.nvim_create_namespace("fknb_cells")
-
--- Spinner frames (VSCode style)
-local spinner_frames = { "●", "◐", "◓", "◑" }
-local spinner_index = 1
-
-local icons = {
-  kernels = {
-    python = "",
-    markdown = "",
-    javascript = "",
-    lua = "",
-    r = "",
-    default = "",
-  },
-  env = {
-    active = "",
-    inactive = "󱋙",
-  },
-  status = {
-    ready = "",
-    running = spinner_frames[1],
-    done = "󰗠",
-    error = "",
-    retry = "󰜉",
-  },
-  actions = {
-    run = "▶",
-    retry = "󰜉",
-    debug = "",
-  },
-}
-
+local config = require("fknb.config")
 local state = require("fknb.utils.state")
+
+local spinner_frames = config.options.ui.spinner_frames
+local spinner_index = 1
 
 local function get_status(cell)
   return cell.status or "ready"
 end
 
 local function setup_highlights()
-  vim.api.nvim_set_hl(0, "FknbStatusDone", { fg = "green" })
-  vim.api.nvim_set_hl(0, "FknbStatusError", { fg = "red" })
-  vim.api.nvim_set_hl(0, "FknbStatusReady", { fg = "gray" })
-  vim.api.nvim_set_hl(0, "FknbStatusRunning", { fg = "yellow" })
+  for hl_group, opts in pairs(config.options.ui.highlights) do
+    vim.api.nvim_set_hl(0, hl_group, opts)
+  end
 end
 
 local function draw(buf)
@@ -87,45 +58,36 @@ local function draw(buf)
     local status_key = get_status(cell)
     local status_icon = (status_key == "running")
         and spinner_frames[spinner_index]
-        or icons.status[status_key]
+        or config.options.icons.status[status_key]
 
-    local status_hl_group = "Normal"
-    if status_key == "done" then
-      status_hl_group = "FknbStatusDone"
-    elseif status_key == "error" then
-      status_hl_group = "FknbStatusError"
-    elseif status_key == "ready" then
-      status_hl_group = "FknbStatusReady"
-    elseif status_key == "running" then
-      status_hl_group = "FknbStatusRunning"
-    end
+    local status_hl_group_name = "FknbStatus" .. status_key:sub(1,1):upper() .. status_key:sub(2)
 
-    local cell_label = { "Cell", "WarningMsg" }  -- Yellow
-    local id_label = { "#" .. cell.id, "DiagnosticInfo" } -- Blue
+    local cell_label = { config.options.ui.cell_label_text, config.options.ui.cell_label_hl }
+    local id_label = { "#" .. cell.id, config.options.ui.id_label_hl }
 
     -- Right side text icons
     local right_text = string.format(
       "%s %s  %s  %s %s %s",
-      icons.kernels[cell.lang] or icons.kernels.default,
+      config.options.icons.kernels[cell.lang] or config.options.icons.kernels.default,
       cell.lang,
-      icons.env.active,
-      icons.actions.run,
-      icons.actions.retry,
-      icons.actions.debug
+      config.options.icons.env.active,
+      config.options.icons.actions.run,
+      config.options.icons.actions.retry,
+      config.options.icons.actions.debug
     )
 
-    local visible_left = #status_icon + 2 + #"Cell" + 1 + #tostring(cell.id) + 1
+    local visible_left = #status_icon + 2 + #config.options.ui.cell_label_text + 1 + #tostring(cell.id) + 1
     local visible_right = vim.fn.strdisplaywidth(right_text)
     local spacing = width - visible_left - visible_right
     if spacing < 1 then spacing = 1 end
 
     -- Separator lines
-    local sep = string.rep("─", width)
+    local sep = string.rep(config.options.cell_separator, width)
 
     local virt = {
       { { sep, "Comment" } }, -- top line
       {
-        { " " .. status_icon .. "  ", status_hl_group },
+        { " " .. status_icon .. "  ", status_hl_group_name }, -- Use the name here
         cell_label, { " ", "Normal" },
         id_label, { string.rep(" ", spacing), "Normal" },
         { right_text, "Comment" }

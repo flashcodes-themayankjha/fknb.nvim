@@ -1,44 +1,24 @@
 -- Author : Mayank Jha
 local M = {}
 local ns = vim.api.nvim_create_namespace("fknb_output")
+local config = require("fknb.config")
 
--- Icons
-local icons = {
-  ok = "󰗠",
-  error = "",
-  info = "󰜉",
-}
+local icons = config.options.output.icons
+local hl = config.options.output.highlights
+local INDENT = config.options.output.indent_string
 
--- Highlight groups
-local hl = {
-  sep         = "Comment",
-  icon_ok     = "DiffAdded",
-  icon_err    = "DiagnosticError",
-  icon_info   = "DiagnosticWarn",
-
-  out_label   = "Normal",
-  out_id      = "DiagnosticInfo",
-  exec_lbl    = "Comment",
-  exec_time   = "DiagnosticWarn",
-  log_lbl     = "DiagnosticError",
-
-  out_text    = "Normal",
-  err_text    = "Normal",
-}
-
-local INDENT = "  "
-
----@param buf number
----@param lnum number
----@param cell_id number
----@param output string
----@param status string
----@param exec_ms number
+---
+--@param buf number
+--@param lnum number
+--@param cell_id number
+--@param output string
+--@param status string
+--@param exec_ms number
 function M.render(buf, lnum, cell_id, output, status, exec_ms)
   vim.api.nvim_buf_clear_namespace(buf, ns, lnum, lnum + 20)
 
   local width = vim.api.nvim_win_get_width(0)
-  local sep = string.rep("─", width)
+  local sep = string.rep(config.options.cell_separator, width)
 
   local icon = icons[status] or icons.info
   local icon_hl = ({

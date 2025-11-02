@@ -1,14 +1,49 @@
-
 local M = {}
 
 M.options = {
-  theme = "onedark",
   default_kernel = "python3",
   default_kernel_path = nil,
   default_kernel_name = nil,
   cell_separator = "─",
-  show_watermark = true,
   auto_save = false,
+
+  ui = {
+    spinner_frames = { "󰪞", "󰪟", "󰪠", "󰪡", "󰪢","󰪣", "󰪤", "󰪥" },
+    highlights = {
+      FknbStatusDone = { fg = "green" },
+      FknbStatusError = { fg = "red" },
+      FknbStatusReady = { fg = "gray" },
+      FknbStatusRunning = { fg = "yellow" },
+      FknbStatusRetry = { fg = "orange" },
+    },
+    cell_label_text = "Cell",
+    cell_label_hl = "WarningMsg",
+    id_label_hl = "DiagnosticInfo",
+  },
+
+  output = {
+    icons = {
+      ok = "󰗠",
+      error = "",
+      info = "󰜉",
+    },
+    highlights = {
+      sep         = "Comment",
+      icon_ok     = "DiffAdded",
+      icon_err    = "DiagnosticError",
+      icon_info   = "DiagnosticWarn",
+
+      out_label   = "Normal",
+      out_id      = "DiagnosticInfo",
+      exec_lbl    = "Comment",
+      exec_time   = "DiagnosticWarn",
+      log_lbl     = "DiagnosticError",
+
+      out_text    = "Normal",
+      err_text    = "Normal",
+    },
+    indent_string = "  ",
+  },
 
   markdown = {
     headers = {
@@ -40,66 +75,29 @@ M.options = {
         h6 = "#F38BA8", -- red
       },
     },
-    auto_rerender = true,
-    
-    lists = {
-      ordered = "FKNBListOrdered",
-      unordered = "FKNBListUnordered",
-    },
-    codeblocks = "FKNBCodeBlock",
-    links = "FKNBLink",
-    images = "FKNBImage",
-    callouts = "FKNBCallout",
-    blockquotes = "FKNBBlockquote",
   },
 
   icons = {
     kernels = {
       python = "",
-      r = "",
       markdown = "",
-      kernel = "",
       default = "",
-      active = "",
-      inactive = "󱋙",
     },
     env = {
       active = "",
       inactive = "󱋙",
     },
     status = {
-      ready = "▶",
-      running = "󰑙",
-      paused = "⏸",
-      stop = "⏹",
-      retry = "🔄",
+      ready = "",
+      running = "",
+      retry = "󱍷",
+      error = "󰗖"
     },
-  },
-
-  colors = {
-    kernel_active = "#00ff00",
-    kernel_inactive = "#ff0000",
-    env_active = "#00ff00",
-    env_inactive = "#ff0000",
-  },
-
-  export = {
-    enable_pdf = true,
-    enable_md = true,
-  },
-
-  render = {
-    max_output_lines = 100,
-    image_inline = true,
-    non_destructive = false,  -- true = pretty, false = selectable
-
-  },
-
-  -- Internal state, not meant for user configuration
-  cells = {},
-  kernel = {
-    instance = nil,
-    name = nil,
+    actions = {
+      run = "▶",
+      retry = "🔄",
+      debug = "🐞",
+    },
   },
 }
 
@@ -115,6 +113,11 @@ M.setup = function(opts)
     if hl_name and color then
       vim.api.nvim_set_hl(0, hl_name, { fg = color, bold = true })
     end
+  end
+
+  -- Setup FknbStatus highlight groups
+  for hl_group, opts in pairs(M.options.ui.highlights) do
+    vim.api.nvim_set_hl(0, hl_group, opts)
   end
 end
 

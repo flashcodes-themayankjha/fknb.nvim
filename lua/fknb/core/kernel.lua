@@ -25,28 +25,19 @@ local function on_stdout(id, data, event)
     if line ~= "" then
       local ok, result = pcall(vim.fn.json_decode, line)
       if ok then
-        if result.status == "ready" then
-          state.kernel.id = id
-          state.kernel.connection_file = result.connection_file
-          vim.notify("Kernel is ready.", vim.log.levels.INFO)
-        elseif result.event == "kernel_started" then
+        if result.event == "kernel_started" then
           vim.notify("Kernel bridge started.", vim.log.levels.INFO)
         elseif result.event == "kernels_list" then
           state.available_kernels = result.kernels
-        elseif result.cell_id then
+        elseif result.event == "cell_update" then
           local cell = state.cells[result.cell_id]
           if cell then
             cell.status = result.status
-            if result.output then
-              cell.output = result.output
-              renderer.render_cell(vim.api.nvim_get_current_buf(), cell)
-            end
+            cell.output = result.output
           end
         elseif result.event == "error" then
           vim.notify("Kernel bridge error: " .. result.message .. "\n" .. result.traceback, vim.log.levels.ERROR)
         else
-          -- This case should ideally not be reached if all outputs have cell_id
-          -- For now, we'll just notify, but a more robust solution might be needed
           vim.notify("Unhandled kernel output: " .. vim.inspect(result), vim.log.levels.WARN)
         end
       else
