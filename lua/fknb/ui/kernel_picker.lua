@@ -31,9 +31,10 @@ function M.show_kernel_picker(available_kernels)
           local selected_kernel_name = selection.value
           config.options.default_kernel = selected_kernel_name
           state.last_selected_kernel = selected_kernel_name
-          kernel.stop() -- Stop current kernel if running
-          kernel.start()
-          vim.notify("Selected kernel: " .. selection.display, vim.log.levels.INFO)
+          kernel.stop(function()
+            kernel.start()
+            vim.notify("Selected kernel: " .. selection.display, vim.log.levels.INFO)
+          end)
         end
         require('telescope.actions').close(bufnr)
       end

@@ -115,8 +115,13 @@ function M.start()
   end)
 end
 
-function M.stop()
-  if not job_id then return end
+function M.stop(callback)
+  if not job_id then
+    if type(callback) == "function" then
+      callback()
+    end
+    return
+  end
   vim.fn.jobsend(job_id, vim.fn.json_encode({ action = "shutdown" }) .. "\n")
   -- Give the bridge a moment to shut down gracefully
   vim.defer_fn(function()
@@ -125,8 +130,12 @@ function M.stop()
     end
     job_id = nil
     state.kernel = nil
+    if type(callback) == "function" then
+      callback()
+    end
   end, 1000)
 end
+
 
 function M.execute(cell_id, code)
   if not job_id or not state.kernel then

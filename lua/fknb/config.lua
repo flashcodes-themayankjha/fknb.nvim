@@ -3,7 +3,7 @@ local M = {}
 M.options = {
   default_kernel = "python3",
   default_kernel_path = nil,
-  default_kernel_name = nil,
+  default_kernel_name = "Python 3.10",
   cell_separator = "─",
   auto_save = false,
 
@@ -12,9 +12,16 @@ M.options = {
     highlights = {
       FknbStatusDone = { fg = "green" },
       FknbStatusError = { fg = "red" },
-      FknbStatusReady = { fg = "gray" },
+      FknbStatusReady = { fg = "white" },
       FknbStatusRunning = { fg = "yellow" },
-      FknbStatusRetry = { fg = "orange" },
+      FknbStatusRetry = { fg = "yellow" },
+      FknbStatusActive       = { fg = "green" },
+      FknbStatusInactive = { fg = "red" },
+      FknbStatusNotReady = { fg = "red" },
+      FknbActionRunReady = { fg = "green" },
+      FknbActionRunError = { fg = "red" },
+      FknbActionDebug = { fg = "red" },
+      FknbActionRetry = { fg = "yellow" },
     },
     cell_label_text = "Cell",
     cell_label_hl = "WarningMsg",
@@ -44,39 +51,7 @@ M.options = {
     },
     indent_string = "  ",
   },
-
-  markdown = {
-    headers = {
-      -- Highlight group names
-      h1 = "FKNBHeader1",
-      h2 = "FKNBHeader2",
-      h3 = "FKNBHeader3",
-      h4 = "FKNBHeader4",
-      h5 = "FKNBHeader5",
-      h6 = "FKNBHeader6",
-
-      -- Symbols for inline visualization
-      symbols = {
-        h1 = "󰲡",
-        h2 = "󰲣",
-        h3 = "󰲥",
-        h4 = "󰲧",
-        h5 = "󰲩",
-        h6 = "󰲫",
-      },
-
-      -- Fallback colors (Catppuccin inspired)
-      colors = {
-        h1 = "#F5C2E7", -- pink
-        h2 = "#CBA6F7", -- lavender
-        h3 = "#F9E2AF", -- yellow
-        h4 = "#A6E3A1", -- green
-        h5 = "#89B4FA", -- blue
-        h6 = "#F38BA8", -- red
-      },
-    },
-  },
-
+ 
   icons = {
     kernels = {
       python = "",
@@ -91,34 +66,28 @@ M.options = {
       ready = "",
       running = "",
       retry = "󱍷",
-      error = "󰗖"
+      error = "󰗖",
+      not_ready = "󱃓",
     },
     actions = {
       run = "▶",
-      retry = "🔄",
-      debug = "🐞",
+      retry = "󰜉",
+      debug = "",
     },
   },
 }
 
--- Setup function for user override
 M.setup = function(opts)
   M.options = vim.tbl_deep_extend("force", M.options, opts or {})
 
-  -- Auto-create header highlight groups if they don't exist
-  local headers = M.options.markdown.headers
-  for i = 1, 6 do
-    local hl_name = headers["h" .. i]
-    local color = headers.colors["h" .. i] or "#FFFFFF"
-    if hl_name and color then
-      vim.api.nvim_set_hl(0, hl_name, { fg = color, bold = true })
-    end
-  end
-
-  -- Setup FknbStatus highlight groups
+  -- UI status HL
   for hl_group, opts in pairs(M.options.ui.highlights) do
     vim.api.nvim_set_hl(0, hl_group, opts)
   end
-end
 
+  -- ✅ Output HL
+  for hl_group, opts in pairs(M.options.output.highlights) do
+    vim.api.nvim_set_hl(0, hl_group, opts)
+  end
+end
 return M
