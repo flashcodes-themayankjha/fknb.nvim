@@ -2,8 +2,12 @@ local M = {}
 local config = require("fknb.config")
 local state = require("fknb.utils.state")
 local kernel = require("fknb.core.kernel")
-local serializer = require("fknb.core.serializer")
 local kernel_picker = require("fknb.ui.kernel_picker")
+require("fknb.core.commands")
+
+vim.opt.shortmess:append("F") -- disable press-enter for messages
+vim.opt.cmdheight = 0
+vim.notify = function(...) end -- optional: silence print() notify fallback
 
 function M.setup()
   -- Filetype + icons
@@ -184,13 +188,42 @@ end
 
 function M.start_last_kernel()
   if state.last_selected_kernel then
-    config.options.default_kernel = state.last_selected_kernel
-    kernel.stop() -- Stop current kernel if running
-    kernel.start()
-    vim.notify("Starting last selected kernel: " .. state.last_selected_kernel, vim.log.levels.INFO)
+    kernel.list_kernels(function(available_kernels)
+      local found_kernel = nil
+      for _, k in ipairs(available_kernels) do
+        if k.name == state.last_selected_kernel then
+          found_kernel = k
+          break
+        end
+      end
+
+      if found_kernel then
+        state.selected_kernel = found_kernel
+        kernel.stop(function()
+          kernel.start()
+          vim.notify("Starting last selected kernel: " .. found_kernel.name, vim.log.levels.INFO)
+        end)
+      else
+        vim.notify("Last selected kernel '" .. state.last_selected_kernel .. "' not found.", vim.log.levels.ERROR)
+      end
+    end)
   else
     vim.notify("No last selected kernel found. Please select one first.", vim.log.levels.WARN)
   end
+end
+
+function M.start_kernel()
+  kernel.start()
+end
+
+function M.stop_kernel()
+  kernel.stop()
+end
+
+function M.restart_kernel()
+  kernel.stop(function()
+    kernel.start()
+  end)
 end
 
 return M
