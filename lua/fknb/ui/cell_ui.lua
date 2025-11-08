@@ -1,20 +1,19 @@
+-- lua/fknb/ui.lua
 local M = {}
 
 local ns = vim.api.nvim_create_namespace("fknb_cells")
 local config = require("fknb.config")
 local state = require("fknb.utils.state")
+local output_renderer = require("fknb.ui.output") -- your output.lua module
 
 local spinner_frames = config.options.ui.spinner_frames
 local spinner_index = 1
 
--- highlight passthrough helper (keeps your design intent)
 local function hl(name) return name end
 
-local function get_status(cell)
-  return cell.status or "ready"
-end
+local function get_status(cell) return cell.status or "ready" end
 
--- ✅ measure display width (icons/emojis count as 2 cells sometimes)
+-- helper to compute segment width
 local function seg_width(segments)
   local text = table.concat(vim.tbl_map(function(s) return s[1] end, segments))
   return vim.fn.strdisplaywidth(text)
@@ -30,7 +29,7 @@ local function draw(buf)
   local to_add, to_remove, to_update = {}, {}, {}
 
   for id, cell in pairs(state.cells) do
-    local prev = state.prev_cells[id]
+    local prev = state.prev_cells and state.prev_cells[id]
     if not prev then
       table.insert(to_add, cell)
     elseif cell.status ~= prev.status or cell.output ~= prev.output then
@@ -38,13 +37,17 @@ local function draw(buf)
     end
   end
 
-  for id in pairs(state.prev_cells) do
-    if not state.cells[id] then table.insert(to_remove, id) end
+  if state.prev_cells then
+    for id in pairs(state.prev_cells) do
+      if not state.cells[id] then table.insert(to_remove, id) end
+    end
   end
 
   for _, id in ipairs(to_remove) do
     local c = state.prev_cells[id]
-    vim.api.nvim_buf_clear_namespace(buf, ns, c.range[1], c.range[3] + 1)
+    if c and c.range then
+      vim.api.nvim_buf_clear_namespace(buf, ns, c.range[1], c.range[3] + 1)
+    end
   end
 
   for _, cell in ipairs(to_add) do
@@ -69,21 +72,21 @@ local function draw(buf)
     local actions = {}
     if status == "ready" or status == "done" then
       actions = {
-        { config.options.icons.actions.run,   hl("FknbActionRunReady") },
+        { config.options.icons.actions.run,   "FknbActionRunReady" },
       }
     elseif status == "running" then
       actions = {
-        { config.options.icons.actions.run,   hl("FknbActionRunReady") },
+        { config.options.icons.actions.run,   "FknbActionRunReady" },
         { " ", "Normal" },
-        { config.options.icons.actions.retry, hl("FknbActionRetry") },
+        { config.options.icons.actions.retry, "FknbActionRetry" },
       }
     elseif status == "error" then
       actions = {
-        { config.options.icons.actions.run,   hl("FknbActionRunError") },
+        { config.options.icons.actions.run,   "FknbActionRunError" },
         { " ", "Normal" },
-        { config.options.icons.actions.retry, hl("FknbActionRetry") },
+        { config.options.icons.actions.retry, "FknbActionRetry" },
         { " ", "Normal" },
-        { config.options.icons.actions.debug, hl("FknbActionDebug") },
+        { config.options.icons.actions.debug, "FknbActionDebug" },
       }
     end
 
@@ -97,7 +100,6 @@ local function draw(buf)
     }
     vim.list_extend(right, actions)
 
-    -- ✅ compute widths correctly
     local left_text = " "..icon.."  "..config.options.ui.cell_label_text.." #" .. cell.id
     local left_len = vim.fn.strdisplaywidth(left_text)
     local right_len = seg_width(right)
@@ -105,7 +107,6 @@ local function draw(buf)
     local spacing = width - left_len - right_len - 1
     if spacing < 1 then spacing = 1 end
 
-    -- ✅ dynamic full separator line
     local sep = string.rep(config.options.cell_separator, width)
 
     local virt = {
@@ -126,39 +127,83 @@ local function draw(buf)
       priority = 200,
     })
 
-    require("fknb.core.renderer").render_cell(buf, cell)
+    -- render internals
+    local ok, renderer = pcall(require, "fknb.core.renderer")
+    if ok and renderer and renderer.render_cell then
+      renderer.render_cell(buf, cell)
+    end
   end
 
   for _, cell in ipairs(to_update) do
-    require("fknb.core.renderer").render_cell(buf, cell)
+    local ok, renderer = pcall(require, "fknb.core.renderer")
+    if ok and renderer and renderer.render_cell then
+      renderer.render_cell(buf, cell)
+    end
+  end
+end
+
+-- public bridge for kernel -> UI
+function M.render_output(cell_id, output, status, exec_ms)
+  -- ensure cell exists
+  if not state.cells or not state.cells[cell_id] then
+    print("FkNBDebug: render_output: unknown cell_id", cell_id)
+    return
+  end
+
+  local cell = state.cells[cell_id]
+  local buf = vim.api.nvim_get_current_buf()
+  local lnum = cell.range and cell.range[3] or 0
+
+  -- normalize output
+  local out = output
+  -- if content table with data/text/plain, use that
+  if type(output) == "table" then
+    out = output["text/plain"] or output.data and output.data["text/plain"] or output
+  end
+
+  -- delegate to output renderer
+  local ok, outmod = pcall(require, "fknb.core.output")
+  if ok and outmod and outmod.render then
+    outmod.render(buf, lnum, cell_id, out, status or "ok", exec_ms)
+  else
+    print("FkNBDebug: output renderer missing")
   end
 end
 
 function M.attach_autocmd()
   local function safe_redraw(buf)
-    if vim.api.nvim_buf_is_valid(buf)
-       and vim.bo[buf].filetype == "fknb"
-    then draw(buf) end
+    if vim.api.nvim_buf_is_valid(buf) and vim.bo[buf].filetype == "fknb" then draw(buf) end
   end
 
-  vim.api.nvim_create_autocmd({ "BufEnter", "TextChanged", "TextChangedI" }, {
+  vim.api.nvim_create_autocmd({ "BufEnter", "TextChanged", "TextChangedI", "BufWinEnter" }, {
     pattern = "*.fknb",
     callback = function(e) safe_redraw(e.buf) end,
   })
 
-  -- ✅ dynamic live resize
   vim.api.nvim_create_autocmd({ "WinResized", "VimResized" }, {
     callback = function()
-      safe_redraw(vim.api.nvim_get_current_buf())
-    end
+      for _, win in ipairs(vim.api.nvim_list_wins()) do
+        local b = vim.api.nvim_win_get_buf(win)
+        if vim.api.nvim_buf_is_valid(b) and vim.bo[b].filetype == "fknb" then
+          draw(b)
+        end
+      end
+    end,
   })
 
   draw(vim.api.nvim_get_current_buf())
 
+  -- spinner timer
   local timer = vim.loop.new_timer()
   timer:start(0, 150, vim.schedule_wrap(function()
     spinner_index = (spinner_index % #spinner_frames) + 1
-    safe_redraw(vim.api.nvim_get_current_buf())
+    -- refresh all visible buffers
+    for _, win in ipairs(vim.api.nvim_list_wins()) do
+      local b = vim.api.nvim_win_get_buf(win)
+      if vim.api.nvim_buf_is_valid(b) and vim.bo[b].filetype == "fknb" then
+        draw(b)
+      end
+    end
   end))
 end
 
