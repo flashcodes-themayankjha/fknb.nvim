@@ -1,11 +1,42 @@
-if exists('g:loaded_fknb') | finish | endif
-let g:loaded_fknb = 1
+" ============================================================================
+" FKVim — Jupyter-style Notebook Commands for Neovim
+" ============================================================================
+if exists('g:loaded_fkvim')
+  finish
+endif
+let g:loaded_fkvim = 1
 
-command! FkStartKernel lua require('fknb').start_kernel()
-command! FkStopKernel lua require('fknb').stop_kernel()
-command! FkSelectKernel lua require('fknb').select_kernel()
-command! -nargs=1 FkExport lua require('fknb').export(<q-args>)
-command! FkRunCell lua require('fknb').run_current_cell()
+" ----------------------------------------------------------------------------
+" Core Commands
+" ----------------------------------------------------------------------------
 
-" Default mapping
-nnoremap <silent> <leader>r <Cmd>FkRunCell<CR>
+" ▶️ Run the current cell
+command! -nargs=0 FkRunCell lua require("fknb.core.commands").run_current_cell()
+
+" ▶️ Restart kernel (safe stop + start)
+command! -nargs=0 FkRestartKernel lua require("fknb.core.commands").restart_kernel()
+
+" ▶️ Stop kernel
+command! -nargs=0 FkStopKernel lua require("fknb.core.kernel").stop()
+
+" ▶️ Clear output for current cell
+command! -nargs=0 FkClearOutput lua require("fknb.ui.output").clear(require("fknb.core.parser").get_cell_at_cursor().id)
+
+" ▶️ Clear all outputs
+command! -nargs=0 FkClearAllOutputs lua require("fknb.core.kernel").clear_all_outputs()
+
+" ▶️ Collapse / Expand current cell output
+command! -nargs=0 FkToggleOutput lua require("fknb.ui.output").toggle_collapse(require("fknb.core.parser").get_cell_at_cursor().id)
+
+" ▶️ Start kernel
+command! -nargs=0 FkStartKernel lua require("fknb.core.kernel").start()
+
+
+
+" ----------------------------------------------------------------------------
+" Optional autostart kernel for *.fknb buffers
+" ----------------------------------------------------------------------------
+augroup FkvimAutostart
+  autocmd!
+  autocmd BufEnter *.fknb lua require("fknb.core.kernel").start()
+augroup END
