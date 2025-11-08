@@ -5,4 +5,4 @@ __pycache__/
 *.pyd
 .Python
 env/
-venv/
+venv/.DS_Store
