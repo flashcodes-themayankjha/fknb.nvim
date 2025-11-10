@@ -1,16 +1,15 @@
-⸻
-
-🧠 FKNB — Notebook Cells in Neovim
+# 🧠 FKNB — Notebook Cells in Neovim
 
 Modern interactive notebook experience in Neovim, inspired by Jupyter but built for developers who love Vim.
 
 Run code blocks, render execution controls inline, and work like a scientist without leaving Neovim.
 
-⚠️ Work-in-progress — highly experimental
+> ⚠️ Work-in-progress — highly experimental
+
+<img width="1709" height="1062" alt="image" src="https://github.com/user-attachments/assets/c626627f-216f-4739-be51-0cc8a08e8ce3" />
 
 
-
-✨ Features (Current)
+## ✨ Features (Current)
 
 | Feature                                | Status |
 | -------------------------------------- | :----: |
@@ -26,28 +25,25 @@ Run code blocks, render execution controls inline, and work like a scientist wit
 
 
 
-🎨 UI Showcase
+## 🎨 UI Showcase
 
 A cell looks like this:
 
-────────────────────────────────────────
- ● Cell #1                        python    ▶ ↻ 🐞
-────────────────────────────────────────
-print("Hello, FKNB!")
+<img width="1428" height="287" alt="image" src="https://github.com/user-attachments/assets/78e79895-94ae-499f-a543-9fe92038e1b9" />
 
-•Highlighted “Cell” in Yellow
-•Cell ID in Blue (#1, #2, etc.)
-•Animated execution dots (● ◐ ◓ ◑)
-•Kernel icon + language + env icon
-•Action icons: run/retry/debug
+
+- Highlighted “Cell” in Yellow
+- Cell ID in Blue (#1, #2, etc.)
+- Animated execution spinners. 
+- Kernel icon + language + env icon
+- Action icons: run/retry/debug
 
 Markdown cells stay readable.
 Code stays editable.
 Delimiters remain hidden.
 
-⸻
 
-🚀 Usage
+## 🚀 Usage
 
 Mark cells with:
 
@@ -65,9 +61,8 @@ Or in Markdown:
 
 Cells automatically render with UI if the file ends with `.fknb`.
 
-⸻
 
-📁 File Type
+## 📁 File Type
 
 Create a notebook file:
 
@@ -76,9 +71,7 @@ nvim my_notebook.fknb
 ```
 
 
-⸻
-
-⚙️ Under the Hood
+### ⚙️ Under the Hood
 
 FKNB uses:
 •Virtual lines
@@ -88,11 +81,10 @@ FKNB uses:
 •Kernel icon mapping
 •Language recognition from cell header
 
-⸻
 
-🧩 Roadmap
+## 🧩 Roadmap
 
-✅ Done
+### ✅ Done
 •Basic cell UI & separators
 •Spinner + status icons
 •Hide cell markers
@@ -100,7 +92,7 @@ FKNB uses:
 •Execute Python/Lua cells
 •Output panel render
 
-🔜 Coming Next
+### 🔜 Coming Next
 
 | Feature                      | Priority |
 | ---------------------------- | :------: |
@@ -110,12 +102,12 @@ FKNB uses:
 | Theme support (Catppuccin/Gruvbox) |    ⭐⭐    |
 
 
-⸻
 
-📦 Install (WIP)
+## 📦 Install (WIP)
+
+### using lazy.nvim 
 
 ```lua
--- lazy.nvim pseudo-install (soon)
 {
   "https://github.com/flashcodes-themayankjha/fknb.nvim",    
   config = function()
@@ -127,21 +119,21 @@ FKNB uses:
 
 
 
-💡 Philosophy
+## 💡 Philosophy
 
 Bring interactive computing to Neovim
 without killing the Vim workflow.
 
-•No notebook lag
-•No ugly borders
-•Seamless editing experience
-•Beautiful, minimalist inline UI
+- No notebook lag
+- No ugly borders
+- Seamless editing experience
+- Beautiful, minimalist inline UI
 
 
 
-🧑‍💻 Author
+## 🧑‍💻 Author
 
-Created by: Mayank Kumar Jha
+Developed  by Mayank Kumar Jha from nfks
 Project vision: Modern Neovim notebooks + gamified dev UX
 
 
