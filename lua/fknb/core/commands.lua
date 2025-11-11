@@ -78,6 +78,12 @@ function M.toggle_output()
   output.toggle_collapse(cell.id)
 end
 
+vim.api.nvim_create_user_command("FknbHealth", function()
+  require("fknb.utils.health").run()
+end, { desc = "Run health diagnostics for FKNB.nvim" })
+
+
+
 ------------------------------------------------------------
 -- 🎛 Helper Commands Registration
 ------------------------------------------------------------
